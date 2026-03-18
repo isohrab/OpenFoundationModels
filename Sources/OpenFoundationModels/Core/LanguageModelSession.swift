@@ -939,9 +939,12 @@ public final class LanguageModelSession: Observable, @unchecked Sendable {
     }
 
     private func appendToolOutput(toolCall: Transcript.ToolCall, segments: [Transcript.Segment]) {
+        // Transform tool call ID from "call_..." to "fc_..." format for OpenAI API
+        let outputId = toolCall.id.replacingOccurrences(of: "call_", with: "fc_")
+        
         let outputEntry = Transcript.Entry.toolOutput(
             Transcript.ToolOutput(
-                id: toolCall.id,
+                id: outputId,
                 toolName: toolCall.toolName,
                 segments: segments
             )
