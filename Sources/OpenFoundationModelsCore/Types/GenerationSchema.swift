@@ -631,60 +631,47 @@ extension GenerationSchema.SchemaType {
         switch self {
         case .object(let properties):
             result["type"] = "object"
-            result["additionalProperties"] = false
-            if !properties.isEmpty {
-                var props: [String: Any] = [:]
-                var required: [String] = []
-                
-                for property in properties {
-                    var propSchema = property.type.toJSONSchema(description: property.description)
-                    // Remove description from nested schema if it was added at property level
-                    if property.description != nil {
-                        propSchema.removeValue(forKey: "description")
-                        propSchema["description"] = property.description
-                    }
 
-                    // Apply guides from PropertyInfo
-                    for guide in property.guides {
-                        guide.applyToSchema(&propSchema)
-                    }
+            var props: [String: Any] = [:]
+            var required: [String] = []
 
-                    // Apply regex patterns from PropertyInfo
-                    if let lastPattern = property.regexPatterns.last {
-                        propSchema["pattern"] = lastPattern
-                    }
+            for property in properties {
+                var propSchema = property.type.toJSONSchema(description: property.description)
 
-                    // If property is optional, modify schema to allow null
-                    if property.isOptional {
-                        if let baseType = propSchema["type"] as? String {
-                            // Simple types: use array notation ["type", "null"]
-                            propSchema["type"] = [baseType, "null"]
-                        } else if propSchema["anyOf"] != nil || propSchema["enum"] != nil {
-                            // Complex types with anyOf or enum: wrap with anyOf including null
-                            let originalSchema = propSchema
-                            propSchema = [
-                                "anyOf": [originalSchema, ["type": "null"]]
-                            ]
-                            // Preserve description at the top level
-                            if let desc = property.description {
-                                propSchema["description"] = desc
-                            }
+                if property.description != nil {
+                    propSchema.removeValue(forKey: "description")
+                    propSchema["description"] = property.description
+                }
+
+                for guide in property.guides {
+                    guide.applyToSchema(&propSchema)
+                }
+
+                if let lastPattern = property.regexPatterns.last {
+                    propSchema["pattern"] = lastPattern
+                }
+
+                if property.isOptional {
+                    if let baseType = propSchema["type"] as? String {
+                        propSchema["type"] = [baseType, "null"]
+                    } else if propSchema["anyOf"] != nil || propSchema["enum"] != nil {
+                        let originalSchema = propSchema
+                        propSchema = [
+                            "anyOf": [originalSchema, ["type": "null"]]
+                        ]
+                        if let desc = property.description {
+                            propSchema["description"] = desc
                         }
                     }
-
-                    props[property.name] = propSchema
-
-                    // Check if the property is optional using PropertyInfo's isOptional field
-                    if !property.isOptional {
-                        required.append(property.name)
-                    }
                 }
-                
-                result["properties"] = props
-                if !required.isEmpty {
-                    result["required"] = required
-                }
+
+                props[property.name] = propSchema
+                required.append(property.name)   // always required
             }
+
+            result["properties"] = props
+            result["required"] = required
+            result["additionalProperties"] = false   
             
         case .dictionary(let valueType):
             result["type"] = "object"
