@@ -631,6 +631,7 @@ extension GenerationSchema.SchemaType {
         switch self {
         case .object(let properties):
             result["type"] = "object"
+            result["additionalProperties"] = false
             if !properties.isEmpty {
                 var props: [String: Any] = [:]
                 var required: [String] = []
