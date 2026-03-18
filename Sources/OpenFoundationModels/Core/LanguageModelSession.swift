@@ -941,7 +941,7 @@ public final class LanguageModelSession: Observable, @unchecked Sendable {
     private func appendToolOutput(toolCall: Transcript.ToolCall, segments: [Transcript.Segment]) {
         let outputEntry = Transcript.Entry.toolOutput(
             Transcript.ToolOutput(
-                id: UUID().uuidString,
+                id: toolCall.id,
                 toolName: toolCall.toolName,
                 segments: segments
             )
